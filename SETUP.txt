@@ -1,0 +1,50 @@
+AREEV SALES MANAGER — FIREBASE-FREE SETUP
+
+FILES
+- index.html
+- style.css
+- script.js
+
+WHAT THIS VERSION USES
+- Local browser storage for automatic saving on the current phone/browser.
+- Optional Google Drive app-data backup and restore.
+- No Firebase scripts, Firebase account, Firestore, or Firebase configuration.
+
+IMPORTANT STORAGE LIMIT
+Local storage does not automatically sync between phones. Use Google Drive backup on the old phone and Restore from Drive on the new phone. Backups are manual; this is not live cloud sync.
+
+FIRST USE
+1. Upload all three files into the same website folder/hosting location.
+2. Open the website using its HTTPS address.
+3. Enter your business name, phone number and a password of at least 6 characters.
+4. Data is saved locally on that phone/browser automatically.
+
+GOOGLE DRIVE BACKUP SETUP (ONE-TIME)
+1. Open https://console.cloud.google.com/ and create/select a Google Cloud project.
+2. In APIs & Services > Library, enable Google Drive API.
+3. In Google Auth Platform / OAuth consent screen, configure the app and add your Google account as a test user if the app is in Testing mode.
+4. In APIs & Services > Credentials, create an OAuth client ID of type Web application.
+5. Add your website's exact HTTPS origin under Authorized JavaScript origins (for example, https://your-site.example). Do not add a page path.
+6. Copy the Web Client ID.
+7. In Areev Sales Manager > Settings, paste it into Google OAuth Client ID and tap Save Client ID.
+8. Tap Connect Google Drive and approve access.
+9. Tap Back up to Drive to save an encrypted backup.
+
+RESTORE ON ANOTHER PHONE
+1. Open the same hosted website on the new phone.
+2. Enter the exact same business name, phone number and password.
+3. Open Settings, enter/save the same OAuth Client ID, and connect the same Google account.
+4. Tap Restore from Drive.
+5. The app will find the matching backup and decrypt it using the password.
+
+SECURITY AND LIMITATIONS
+- The backup is encrypted in the browser using AES-GCM with a key derived from the password. Keep the password safe; if it is lost, the encrypted Drive backup cannot be restored.
+- Google Drive access uses the appDataFolder scope, which is intended for private app data and is not shown as an ordinary Drive file in the user's My Drive list.
+- Google Drive backup is manual, not automatic sync. Back up after important changes.
+- Local data is tied to the browser storage on that device. Clearing browser data can erase the local copy, so make backups regularly.
+- The business name and phone number identify the local workspace; they are not authentication by themselves. The password encrypts Drive backups but does not lock the local browser workspace.
+- Use HTTPS hosting. Google OAuth will not work reliably from a file opened directly as file://.
+- Test with sample records before using this for important business accounts.
+
+FEATURES RETAINED
+Dashboard and dated notepad, midnight note archiving to recycle bin for 10 days, products and stock, customers, walk-in/regular sales, monthly customer ledger, reports/print to PDF, recycle bin, and JSON export/import.

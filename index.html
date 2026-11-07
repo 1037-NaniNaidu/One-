@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1565c0">
+  <title>Areev Sales Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <form id="authForm" class="auth-card">
+      <div class="brand-mark">A</div>
+      <h1>Areev Sales Manager</h1>
+      <p class="muted">Your business, simply managed.</p>
+      <label>Business name<input id="businessName" autocomplete="organization" required maxlength="80" placeholder="Enter business name"></label>
+      <label>Phone number<input id="phoneNumber" inputmode="tel" autocomplete="tel" required maxlength="20" placeholder="Enter phone number"></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters"></label>
+      <button class="primary-btn full" type="submit" id="loginButton">Continue</button>
+      <p id="authMessage" class="message" role="status"></p>
+      <p class="small muted">Your data is saved on this device. Use Google Drive backup in Settings to move it to another device. Your password encrypts Drive backups; it does not lock local data on this device.</p>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">AREEV SALES MANAGER</div>
+        <h1 id="headerBusiness">My Business</h1>
+      </div>
+      <div class="top-actions">
+        <span id="liveClock" class="clock">--:--:--</span>
+        <button id="logoutButton" class="icon-btn" title="Log out" aria-label="Log out">↪</button>
+      </div>
+    </header>
+
+    <main id="mainContent" class="main-content">
+      <section id="dashboardPage" class="page active">
+        <div class="dashboard-grid">
+          <article class="panel notes-panel">
+            <div class="panel-heading">
+              <div><span class="eyebrow">DAILY NOTES</span><h2>Notepad</h2></div>
+              <input id="noteDate" type="date" aria-label="Choose note date">
+            </div>
+            <p class="muted small">Notes are saved for the selected date. At midnight, that day's notes move to the recycle bin for 10 days.</p>
+            <textarea id="dayNote" placeholder="Write today's reminders, pending work or important details..."></textarea>
+            <div class="note-footer"><span id="noteSaveStatus" class="small muted">Saved automatically</span><button id="saveNoteButton" class="primary-btn">Save note</button></div>
+            <div id="archivedNoteHint" class="small muted"></div>
+          </article>
+          <article class="panel summary-panel">
+            <div class="panel-heading"><div><span class="eyebrow">TODAY</span><h2>Sales overview</h2></div><span class="live-dot">LIVE</span></div>
+            <div class="stat-grid">
+              <div class="stat-card"><span>Total sales</span><strong id="todaySales">₹0.00</strong></div>
+              <div class="stat-card"><span>Items sold</span><strong id="todayItems">0</strong></div>
+              <div class="stat-card"><span>Orders</span><strong id="todayOrders">0</strong></div>
+            </div>
+            <h3 class="subheading">Products sold today</h3>
+            <div id="todayProductList" class="compact-list"><p class="empty">No sales recorded today.</p></div>
+          </article>
+        </div>
+        <section class="panel recent-panel">
+          <div class="panel-heading"><div><span class="eyebrow">LATEST ACTIVITY</span><h2>Recent sales</h2></div><button class="text-btn" data-go="reports">View reports</button></div>
+          <div id="recentSales"></div>
+        </section>
+      </section>
+
+      <section id="productsPage" class="page">
+        <div class="page-title"><div><span class="eyebrow">INVENTORY</span><h2>Products</h2></div></div>
+        <form id="productForm" class="panel form-grid">
+          <input type="hidden" id="productId">
+          <label>Product name<input id="productName" required maxlength="100" placeholder="Product name"></label>
+          <label>Selling price (₹)<input id="productPrice" type="number" min="0" step="0.01" required placeholder="0.00"></label>
+          <label>Total stock<input id="productStock" type="number" min="0" step="1" required placeholder="0"></label>
+          <div class="form-actions"><button class="primary-btn" type="submit">Save product</button><button class="secondary-btn" type="button" id="cancelProductEdit">Clear</button></div>
+        </form>
+        <div class="panel"><div class="panel-heading"><h3>Product list</h3><input id="productSearch" class="search-input" placeholder="Search products"></div><div id="productList"></div></div>
+      </section>
+
+      <section id="customersPage" class="page">
+        <div class="page-title"><div><span class="eyebrow">CUSTOMER DIRECTORY</span><h2>Customers</h2></div></div>
+        <form id="customerForm" class="panel form-grid">
+          <input type="hidden" id="customerId">
+          <label>Customer name<input id="customerName" required maxlength="100" placeholder="Customer name"></label>
+          <label>Phone number<input id="customerPhone" inputmode="tel" maxlength="20" placeholder="Optional phone number"></label>
+          <label>Address / details<input id="customerDetails" maxlength="200" placeholder="Optional details"></label>
+          <div class="form-actions"><button class="primary-btn" type="submit">Save customer</button><button class="secondary-btn" type="button" id="cancelCustomerEdit">Clear</button></div>
+        </form>
+        <div class="panel"><div class="panel-heading"><h3>Customer list</h3><input id="customerSearch" class="search-input" placeholder="Search customers"></div><div id="customerList"></div></div>
+      </section>
+
+      <section id="salePage" class="page">
+        <div class="page-title"><div><span class="eyebrow">CHECKOUT</span><h2>New sale</h2></div></div>
+        <div class="sale-layout">
+          <div class="panel">
+            <label>Customer<select id="saleCustomer"><option value="">Walk-in customer</option></select></label>
+            <label>Product<select id="saleProduct"><option value="">Choose a product</option></select></label>
+            <div class="form-grid two">
+              <label>Quantity<input id="saleQuantity" type="number" min="1" step="1" value="1"></label>
+              <label>Unit price (₹)<input id="saleUnitPrice" type="number" min="0" step="0.01" placeholder="Auto-filled"></label>
+            </div>
+            <button id="addToCartButton" class="primary-btn full" type="button">Add to cart</button>
+          </div>
+          <div class="panel">
+            <h3>Cart</h3><div id="cartList"><p class="empty">No items added.</p></div>
+            <div class="total-row"><span>Total</span><strong id="cartTotal">₹0.00</strong></div>
+            <button id="completeSaleButton" class="primary-btn full" type="button">Complete sale</button>
+            <p id="saleMessage" class="message"></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="monthlyPage" class="page">
+        <div class="page-title"><div><span class="eyebrow">CUSTOMER ACCOUNTS</span><h2>Monthly accounts</h2></div></div>
+        <div class="panel">
+          <label>Select customer<select id="ledgerCustomer"><option value="">Choose a customer</option></select></label>
+          <div id="ledgerSummary" class="ledger-summary"></div>
+          <form id="paymentForm" class="inline-form">
+            <label>Payment received (₹)<input id="paymentAmount" type="number" min="0.01" step="0.01" required placeholder="Amount"></label>
+            <label>Note<input id="paymentNote" maxlength="100" placeholder="Optional note"></label>
+            <button class="primary-btn" type="submit">Record payment</button>
+          </form>
+          <div id="ledgerHistory"></div>
+        </div>
+      </section>
+
+      <section id="reportsPage" class="page">
+        <div class="page-title"><div><span class="eyebrow">BUSINESS RECORDS</span><h2>Reports</h2></div></div>
+        <div class="panel">
+          <div class="report-controls"><label>From<input id="reportFrom" type="date"></label><label>To<input id="reportTo" type="date"></label><button id="printReportButton" class="primary-btn" type="button">Print / Save PDF</button></div>
+          <div id="reportSummary"></div><div id="reportTable"></div>
+        </div>
+      </section>
+
+      <section id="recyclePage" class="page">
+        <div class="page-title"><div><span class="eyebrow">RECOVERY</span><h2>Recycle bin</h2></div><button id="emptyBinButton" class="danger-btn">Empty bin</button></div>
+        <div class="panel"><p class="small muted">Deleted products, customers and expired daily notes stay here for 10 days. Restore them before they expire.</p><div id="recycleList"></div></div>
+      </section>
+
+      <section id="settingsPage" class="page">
+        <div class="page-title"><div><span class="eyebrow">PREFERENCES</span><h2>Settings</h2></div></div>
+        <div class="panel settings-card">
+          <h3>Business profile</h3><p id="profileDetails" class="muted"></p>
+          <p class="small muted">Your business data is saved on this device automatically. Google Drive backup is optional and must be run manually.</p>
+          <div class="drive-backup-box">
+            <h3>Google Drive backup</h3>
+            <p class="small muted">Connect Google Drive to save an encrypted backup or restore it on another phone. No Firebase is used.</p>
+            <label>Google OAuth Client ID
+              <input id="googleClientId" type="text" placeholder="Paste your Google OAuth Web Client ID">
+            </label>
+            <button id="saveGoogleClientId" class="secondary-btn" type="button">Save Client ID</button>
+            <div class="drive-actions">
+              <button id="driveConnectButton" class="secondary-btn" type="button">Connect Google Drive</button>
+              <button id="driveBackupButton" class="primary-btn" type="button">Back up to Drive</button>
+              <button id="driveRestoreButton" class="secondary-btn" type="button">Restore from Drive</button>
+            </div>
+            <p id="driveStatus" class="message" role="status"></p>
+          </div>
+          <button id="exportButton" class="secondary-btn">Export backup (JSON)</button>
+          <label class="file-import-label">Import backup from this device
+            <input id="importBackupInput" type="file" accept="application/json">
+          </label>
+          <button id="logoutButton2" class="danger-btn">Log out</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-item active" data-page="dashboard"><span>⌂</span><small>Home</small></button>
+      <button class="nav-item" data-page="products"><span>▦</span><small>Products</small></button>
+      <button class="nav-item" data-page="customers"><span>♙</span><small>Customers</small></button>
+      <button class="nav-item sale-nav" data-page="sale"><span>＋</span><small>New sale</small></button>
+      <button class="nav-item" data-page="monthly"><span>▤</span><small>Accounts</small></button>
+      <button class="nav-item" data-page="reports"><span>▥</span><small>Reports</small></button>
+      <button class="nav-item" data-page="recycle"><span>♲</span><small>Bin</small></button>
+      <button class="nav-item" data-page="settings"><span>⚙</span><small>Settings</small></button>
+    </nav>
+  </div>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="script.js"></script>
+</body>
+</html>
