@@ -146,3 +146,181 @@ function connectDrive(action){
 }
 
 async function deriveEncryptionKey(password,salt){
+  const enc=new TextEncoder();
+  const baseKey=await crypto.subtle.importKey(
+    "raw",enc.encode(password),"PBKDF2",false,["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    {name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},
+    baseKey,
+    {name:"AES-GCM",length:256},
+    false,
+    ["encrypt","decrypt"]
+  );
+}
+
+async function encryptBackup(password,payload){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await deriveEncryptionKey(password,salt);
+  const encrypted=await crypto.subtle.encrypt(
+    {name:"AES-GCM",iv},
+    key,
+    new TextEncoder().encode(JSON.stringify(payload))
+  );
+  const bytes=new Uint8Array(encrypted);
+  const combined=new Uint8Array(salt.length+iv.length+bytes.length);
+  combined.set(salt,0);
+  combined.set(iv,salt.length);
+  combined.set(bytes,salt.length+iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptBackup(password,encoded){
+  const raw=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+  const salt=raw.slice(0,16);
+  const iv=raw.slice(16,28);
+  const encrypted=raw.slice(28);
+  const key=await deriveEncryptionKey(password,salt);
+  const decrypted=await crypto.subtle.decrypt(
+    {name:"AES-GCM",iv},
+    key,
+    encrypted
+  );
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+async function driveRequest(url,options={}){
+  if(!driveAccessToken)throw new Error("Connect Google Drive first.");
+  const response=await fetch(url,{
+    ...options,
+    headers:{
+      ...(options.headers||{}),
+      Authorization:"Bearer "+driveAccessToken
+    }
+  });
+  if(!response.ok){
+    const message=await response.text();
+    throw new Error("Google Drive error: "+message);
+  }
+  if(response.status===204)return null;
+  return response.json();
+}
+
+async function findDriveBackup(){
+  const result=await driveRequest(
+    "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27areev-sales-backup.json%27&fields=files(id,name)"
+  );
+  return result.files?.[0]||null;
+}
+
+async function uploadDriveBackup(){
+  if(!account){
+    setDriveStatus("Open your business workspace first.");
+    return;
+  }
+  const password=$("password").value;
+  if(!password){
+    setDriveStatus("Enter your business password on the login screen first.");
+    return;
+  }
+  try{
+    setDriveStatus("Preparing encrypted backup...");
+    const encrypted=await encryptBackup(password,{account,data});
+    const existing=await findDriveBackup();
+    const metadata={
+      name:"areev-sales-backup.json",
+      mimeType:"application/json",
+      ...(existing?{}:{parents:["appDataFolder"]})
+    };
+    const boundary="-------areevbackupboundary";
+    const body=
+      "--"+boundary+"\r\n"+
+      "Content-Type: application/json; charset=UTF-8\r\n\r\n"+
+      JSON.stringify(metadata)+"\r\n"+
+      "--"+boundary+"\r\n"+
+      "Content-Type: application/json\r\n\r\n"+
+      JSON.stringify({encrypted})+"\r\n"+
+      "--"+boundary+"--";
+    const url=existing
+      ?`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart`
+      :"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+    await driveRequest(url,{
+      method:existing?"PATCH":"POST",
+      headers:{"Content-Type":"multipart/related; boundary="+boundary},
+      body
+    });
+    setDriveStatus("Encrypted backup uploaded successfully.",true);
+  }catch(error){
+    console.error(error);
+    setDriveStatus(error.message||"Backup failed.");
+  }
+}
+
+async function restoreDriveBackup(){
+  const password=$("password").value;
+  if(!password){
+    setDriveStatus("Enter your business password first.");
+    return;
+  }
+  try{
+    setDriveStatus("Searching for your backup...");
+    const file=await findDriveBackup();
+    if(!file){
+      setDriveStatus("No backup was found in this Google Drive account.");
+      return;
+    }
+    const result=await driveRequest(
+      `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`
+    );
+    const restored=await decryptBackup(password,result.encrypted);
+    if(!restored.account||!restored.data){
+      throw new Error("Backup file format is not valid.");
+    }
+    const expected=accountKeyFor(restored.account.businessName,restored.account.phone);
+    if(expected!==accountKey){
+      throw new Error("This backup belongs to a different business or phone number.");
+    }
+    data={...emptyData(),...restored.data};
+    saveLocal();
+    renderAll();
+    setDriveStatus("Backup restored successfully.",true);
+  }catch(error){
+    console.error(error);
+    setDriveStatus("Restore failed. Check your password and backup. "+error.message);
+  }
+}
+
+/* Authentication and workspace entry */
+
+$("authForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const businessName=$("businessName").value.trim();
+  const phone=$("phoneNumber").value.trim();
+  const password=$("password").value;
+  if(businessName.length<2){
+    showAuth("Please enter a valid business name.");
+    return;
+  }
+  if(cleanPhone(phone).length<7){
+    showAuth("Please enter a valid phone number.");
+    return;
+  }
+  if(password.length<6){
+    showAuth("Password must contain at least 6 characters.");
+    return;
+  }
+  const button=$("authForm").querySelector('button[type="submit"]');
+  if(button)button.disabled=true;
+  try{
+    account={businessName,phone};
+    accountKey=accountKeyFor(businessName,phone);
+    loadLocalData();
+    showApp();
+  }catch(error){
+    console.error(error);
+    showAuth("Unable to open your workspace. Please try again.");
+  }finally{
+    if(button)button.disabled=false;
+  }
+});
